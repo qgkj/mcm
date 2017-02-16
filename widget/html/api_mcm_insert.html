@@ -36,14 +36,13 @@
 		
 		function mcm_insert(){
 			checkClass();
-			var ac = '姓名';
-	    	var bc = '身份证号';
-	    	var ax = '地址';
-	    	var cx = '学历';
-	    	var dx = '婚姻';
-	    	var dc = {name:ac, number:bc, address:ax, xueli:cx, hunyin:dx};
-			var param = {class:clazz, value:dc};
-			loading();
+			var ac = value('xingming');
+            var bc = value('shenfen');
+            var ax = value('dizhi');
+            var cx = value('xl');
+            var dc = {name:ac, number:bc, address:ax, xueli:cx};
+            var param = {class:clazz, value:dc};
+            loading();
 			mcm.insert(param, function(ret, err){
 				finishing();
 				if(ret){
