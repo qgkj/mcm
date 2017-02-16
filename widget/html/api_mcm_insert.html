@@ -33,11 +33,12 @@
 		
 		function mcm_insert(){
 			checkClass();
-			dataCount++;
-			var ac = 'name_aaaa-' + dataCount;
-	    	var bc = 'des_bbbb-' + dataCount;
-	    	var ax = ['user_1111-' + dataCount, 'user_2222' + dataCount, 'user_3333' + dataCount];
-	    	var dc = {name:ac, des:bc, user:ax};
+			var ac = '姓名';
+	    	var bc = '身份证号';
+	    	var ax = '地址';
+	    	var cx = '学历';
+	    	var dx = '婚姻';
+	    	var dc = {name:ac, number:bc, address:ax, xueli:cx, hunyin:dx};
 			var param = {class:clazz, value:dc};
 			loading();
 			mcm.insert(param, function(ret, err){
