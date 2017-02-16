@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="chs">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,user-scalable=0">
+    <title>MCM_文件操作</title>
+    <link rel="stylesheet" type="text/css" href="../css/common.css" />
+    <script type="text/javascript" src="../script/common.js"></script>
+    <style>
+    	#progress{
+			position:absolute;
+			top:10px;
+			right:10px;
+			width:100px;
+			height:100px;
+			display:-webkit-box;
+			-webkit-box-pack:center;
+		  	-webkit-box-align:center;
+			-webkit-box-orient: vertical;
+			display:none;
+		}
+		
+		#txt{
+			width:100px;
+			height:100px;
+			position:absolute;
+			top:0;
+			left:0;
+			display:-webkit-box;
+			-webkit-box-pack:center;
+		  	-webkit-box-align:center;
+			-webkit-box-orient: vertical;
+		}
+    </style>
+    <script type="text/javascript">
+		var model = null;
+		var query = null;
+		var clazzNode = null;
+		apiready = function(){
+	    	model = api.require('model');
+	    	query = api.require('query');
+	    	clazzNode = document.getElementById('clzz');
+	    	//在线编译正式版时，可以不用配置,APICloud会取当前应用的配置
+	    	model.config({
+	    		appId:"A6964774665539", 
+	    		appKey:"1E4DC0BD-06DD-F21D-D0A3-05899926188B", 
+	    		url:'https://d.apicloud.com'
+	    	});
+	    }
+	    
+		function capPicture(callback) {
+		    api.getPicture({
+		        sourceType: 'library',
+		        encodingType: 'png',
+		        mediaValue: 'pic',
+		        destinationType: 'url'
+		    }, function (ret, err) {
+		    	console.log('获取图片：\n' + JSON.stringify(ret));
+		        callback(ret.data, err);
+		    });
+		}
+
+		function capVideo(callback) {
+		    var localSourceType = 'library ';
+		    api.getPicture({
+		        sourceType: localSourceType,
+		        encodingType: 'png',
+		        mediaValue: 'video'
+		    }, function (ret, err) {
+		    	console.log('获取视频：\n' + JSON.stringify(ret));
+		        callback(ret.data, err);
+		    });
+		}
+		
+		function comitVideoData(){
+			capVideo(function(url){
+				if(url){
+					var dt = {
+						file:{
+							name:document.getElementById('clzz').value, //设置文件名
+							url:url //文件本地地址
+						},
+						values:{//保留字段
+						
+						}
+					}
+					progress.reset();
+					model.uploadFile({
+						data:dt,
+						report:true //回调上传进度
+					}, updatePercent);
+				}
+			});
+		}
+		
+		function comitImgData(){
+			capPicture(function(url){
+				if(url){
+					var dt = {
+						file:{
+							name:document.getElementById('clzz').value, //设置文件名
+							url:url //文件本地地址
+						},
+						values:{//保留字段
+						
+						}
+					}
+					progress.reset();
+					model.uploadFile({
+						data:dt,
+						report:true
+					}, updatePercent);
+				}
+			});
+		}
+		
+		function loadData(){
+			var url = 'http://a631aa25874caa1814bd.b0.upaiyun.com/apicloud/b8e63f7d8d8159a4be84d79e5eca7a00.mp4';
+			progress.reset();
+			model.downloadFile({
+				id:'54af3e1a6e1edd0f45f1ff9d',//id不为空时，mcm会先根据id到file表里查找到相应的数据后，取其url再进行下载
+				url:url,
+				report:true,
+				//savePath:'fs://aaaaa.jpg'//设置下载文件的存储地址，不设置时，mcm自动分配
+			}, updatePercent);
+		}
+		
+		//更新进度
+		function updatePercent(ret, err){
+			if(0 == ret.state){
+	  			//loading('进度：' + ret.progress);
+	  			progress.step(ret.progress);
+			}else{
+				//finishing();
+				showAlert('上传成功：\n' + JSON.stringify(ret));
+				console.log(JSON.stringify(ret));
+				if(ret.type && ret.type.indexOf('image') >= 0){
+					//如果是图片上传成功则将上传结果显示到页面上
+					document.getElementById('img').src = ret.url;
+				}
+			}
+		}
+		
+		function loadAllImg(){
+			var clazz = 'file';//指定查询表为文件表
+			query.createQuery(function(ret, err){
+				var queryId = ret.qid;
+				query.limit({qid:queryId, value:50});//分页50条/页
+				query.skip({qid:queryId, value:0});
+				loading();
+				model.findAll({class:clazz, qid:queryId}, function(ret, err){
+					finishing();
+					if(ret){
+						showAlert(JSON.stringify(ret));
+					}else{
+						showAlert(JSON.stringify(err));
+					}
+					var html = '';
+					if(ret && ret.length > 0){
+						var l = ret.length;
+						for(var i = 0; i < l; ++i){
+							var item = ret[i];
+							//文件mimeType为"image/*"则显示
+							if(item.type && item.type.indexOf('image') >= 0){
+								var url = item.url;
+								html += "<img width=200 height=200 src='" + url + "' /><br> ";
+							}
+						}
+					}
+					document.getElementById('imglist').innerHTML = html;
+				});
+			});
+		}
+	</script>
+</head>
+<body>
+	<div id="progress">
+			<canvas id="myCanvas" width="100" height="100"></canvas>
+			<div id="txt">
+				<div>
+					<font id="per" size="2">0</font>
+					<font size="2">%</font>
+		  		</div>
+		  		<div><font size="2">已花费时间</font></div>
+		  		<div><font id="time" size="2">0s</font></div>
+			</div>
+		</div>
+    <div >
+        <div id="main"> 
+            <div>
+            	<div class="line">文件上传/下载</div>
+            	<div>输入文件名：<input type="text" value="img" id="clzz"/></div>
+            	<div class="btn" tapmode="active" onclick="comitVideoData()" >点击上传视频</div>
+            	<div class="btn" tapmode="active" onclick="comitImgData()" >点击上传图片</div>
+            	<div class="btn" tapmode="active" onclick="loadData()" >点击下载文件</div>
+            	<div class="btn" tapmode="active" onclick="loadAllImg()" >显示所有图片文件</div>
+            </div>
+            <br>
+            <p>图片上传结果：</p>
+            <div id="ado">
+				<img id='img' width=100 height=100 src='../image/hold.png'>
+            </div>
+            <p>图片列表：</p>
+            <div id="imglist">
+				
+            </div>
+        </div>   
+    </div>
+</body>
+<script>
+
+	function Progress(){
+		this.b = 0;
+		this.self = null;
+		this.per = null
+		this.time = null;
+		this.context = null;
+		this.init = function(){
+			var canvas = document.getElementById('myCanvas');
+			this.context = canvas.getContext('2d');
+			this.context.clearRect(0, 0, 100, 100);
+			this.per = document.getElementById('per');
+			this.time = document.getElementById('time');
+			this.self = document.getElementById('progress');
+		}
+		this.reset = function(){
+			this.b = new Date().getTime();
+			this.time.innerHTML = '0秒'; 
+			this.per.innerHTML = '0'; 
+			this.self.style.display = 'block';
+		}
+		this.step = function(process){
+			var now = new Date().getTime();
+			var step = (now - this.b) / 1000;
+			this.time.innerHTML = parseInt(step) + '秒'; 
+			this.per.innerHTML = parseInt(process);
+			var ctx = this.context; 
+			ctx.beginPath();  
+			ctx.moveTo(50, 50);  
+			ctx.arc(50, 50, 50, 0, Math.PI * 2, false);  
+			ctx.closePath();  
+			ctx.fillStyle = '#ddd';  
+			ctx.fill();  
+			ctx.beginPath();  
+			ctx.moveTo(50, 50);  
+			ctx.arc(50, 50, 50, 0, Math.PI * 2 * process / 100, false);  
+			ctx.closePath();  
+			ctx.fillStyle = '#e74c3c';  
+			ctx.fill();  
+			ctx.beginPath();  
+			ctx.moveTo(50, 50);  
+			ctx.arc(50, 50, 45, 0, Math.PI * 2, true);  
+			ctx.closePath();  
+			ctx.fillStyle = 'rgba(125,125,125,0.3)';  
+			ctx.fill();
+			ctx.beginPath();  
+			ctx.arc(50, 50, 40, 0, Math.PI * 2, true);  
+			ctx.closePath();  
+			ctx.strokeStyle = '#ddd';  
+			ctx.stroke();
+			if(100 == process){
+				setTimeout(function(){
+					progress.self.style.display = 'none';
+				}, 2000);
+			}
+		}
+	}
+
+	var progress = new Progress();
+	progress.init();
+
+</script>
+</html>
